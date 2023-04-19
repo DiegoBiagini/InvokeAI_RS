@@ -6,7 +6,7 @@ from .pngwriter import PngWriter, PromptFormatter, retrieve_metadata, write_meta
 from .seamless import configure_model_padding
 from .txt2mask import Txt2Mask
 from .util import InitImageResizer, make_grid
-
+from PIL import ImageDraw
 
 def debug_image(
     debug_image, debug_text, debug_show=True, debug_result=False, debug_status=False

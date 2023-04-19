@@ -684,7 +684,7 @@ class StableDiffusionGeneratorPipeline(StableDiffusionPipeline):
         seed=None,
     ) -> InvokeAIStableDiffusionPipelineOutput:
         if isinstance(init_image, PIL.Image.Image):
-            init_image = image_resized_to_grid_as_tensor(init_image.convert("RGB"))
+            init_image = image_resized_to_grid_as_tensor(init_image.convert("RGB"), normalize=False)
 
         if init_image.dim() == 3:
             init_image = einops.rearrange(init_image, "c h w -> 1 c h w")
@@ -920,7 +920,14 @@ class StableDiffusionGeneratorPipeline(StableDiffusionPipeline):
     def decode_latents(self, latents):
         # Explicit call to get the vae loaded, since `decode` isn't the forward method.
         self._model_group.load(self.vae)
-        return super().decode_latents(latents)
+
+        latents = 1 / self.vae.config.scaling_factor * latents
+        image = self.vae.decode(latents).sample
+        image = image.clamp(0, 1)
+
+        # we always cast to float32 as this does not cause significant overhead and is compatible with bfloat16
+        image = image.cpu().permute(0, 2, 3, 1).float().numpy()
+        return image
 
     def debug_latents(self, latents, msg):
         from invokeai.backend.image_util import debug_image
